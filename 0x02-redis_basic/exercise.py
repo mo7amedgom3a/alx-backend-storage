@@ -59,15 +59,38 @@ def call_history(method: Callable) -> Callable:
     return wrapper
 
 
-def replay(method: Callable) -> None:
+def replay(fn: Callable):
     """display the history of calls of a particular function"""
     r = redis.Redis()
-    method_name = method.__qualname__
-    inputs = r.lrange(method_name + ":inputs", 0, -1)
-    outputs = r.lrange(method_name + ":outputs", 0, -1)
-    print(f"{method_name} was called {r.get(method_name).decode('utf-8')} times:")
-    for i, o in zip(inputs, outputs):
-        print(f"{method_name}(*{i.decode('utf-8')}) -> {o.decode('utf-8')}")
+    function_name = fn.__qualname__
+    value = r.get(function_name)
+    try:
+        value = int(value.decode("utf-8"))
+    except Exception:
+        value = 0
+
+    # print(f"{function_name} was called {value} times")
+    print("{} was called {} times:".format(function_name, value))
+    # inputs = r.lrange(f"{function_name}:inputs", 0, -1)
+    inputs = r.lrange("{}:inputs".format(function_name), 0, -1)
+
+    # outputs = r.lrange(f"{function_name}:outputs", 0, -1)
+    outputs = r.lrange("{}:outputs".format(function_name), 0, -1)
+
+    for input, output in zip(inputs, outputs):
+        try:
+            input = input.decode("utf-8")
+        except Exception:
+            input = ""
+
+        try:
+            output = output.decode("utf-8")
+        except Exception:
+            output = ""
+
+        # print(f"{function_name}(*{input}) -> {output}")
+        print("{}(*{}) -> {}".format(function_name, input, output))
+
 
 class Cache:
     """Create a Cache class"""
